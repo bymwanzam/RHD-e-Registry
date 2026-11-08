@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Set up · RHD e-Registry</title>
+  <link rel="icon" href="ghs-logo.png" type="image/png">
+  <meta name="theme-color" content="#0B0F15">
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="styles.css">
+  <script src="setup.js" defer></script>
+</head>
+<body>
+  <div class="setup-wrap">
+    <div class="setup-brand">
+      <span class="mark logo"><img src="ghs-logo.png" alt="Ghana Health Service"></span>
+      <div><b>RHD e-Registry</b><span>Ghana Health Service</span></div>
+      <button type="button" class="theme-toggle" id="themeBtn" title="Switch between dark and light mode" aria-label="Switch between dark and light mode">
+        <span class="moon"><svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></span>
+        <span class="sun"><svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></span>
+      </button>
+    </div>
+
+    <form class="card setup-card" id="setupForm" autocomplete="off">
+      <div class="setup-steps"><span class="on">1 · Database</span><span>2 · Sign in</span></div>
+      <h1>Connect the MySQL database</h1>
+      <p class="muted">The e-Registry stores its letters, officers and audit trail in a MySQL database on your hosting.
+        Create it first in <b>cPanel → MySQL® Databases</b> (database, user, and "Add User To Database" with ALL PRIVILEGES), then enter the details here.</p>
+
+      <div id="reason"></div>
+
+      <div class="field">
+        <label for="key">Set-up key</label>
+        <input id="key" name="key" required placeholder="XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false" class="ref">
+        <div class="hint" id="keyHint">In cPanel → File Manager, open the file <b>SETUP-KEY.txt</b> and copy the key. This proves you manage the hosting.</div>
+      </div>
+
+      <div class="grid2">
+        <div class="field"><label for="database">Database name</label><input id="database" name="database" required placeholder="cpaneluser_eregistry" spellcheck="false">
+          <div class="hint">cPanel adds your username in front, e.g. <code>cpaneluser_eregistry</code>.</div></div>
+        <div class="field"><label for="user">Database user</label><input id="user" name="user" required placeholder="cpaneluser_eregadmin" spellcheck="false"></div>
+      </div>
+      <div class="field"><label for="password">Database password</label><input id="password" name="password" type="password" autocomplete="new-password"></div>
+      <div class="grid2">
+        <div class="field"><label for="host">Host</label><input id="host" name="host" value="localhost" spellcheck="false"><div class="hint">Keep "localhost" on cPanel hosting.</div></div>
+        <div class="field"><label for="port">Port</label><input id="port" name="port" value="3306" inputmode="numeric"></div>
+      </div>
+      <div class="field"><label for="app_url">Website address</label><input id="app_url" name="app_url" spellcheck="false">
+        <div class="hint">Used for links in SMS alerts.</div></div>
+
+      <div id="result"></div>
+      <div class="btn-row">
+        <button type="button" class="btn" id="testBtn">Test connection</button>
+        <button type="submit" class="btn primary" id="saveBtn">Save and start</button>
+      </div>
+    </form>
+
+    <div class="card setup-card hidden" id="done">
+      <div class="setup-steps"><span>1 · Database</span><span class="on">2 · Sign in</span></div>
+      <h1>The e-Registry is ready</h1>
+      <p>The database is connected and its tables were created.</p>
+      <p>Sign in with username <code>admin</code> and password <code>admin1234</code>. You will be asked to choose a new password straight away.</p>
+      <a class="btn primary" href="./">Go to sign in</a>
+    </div>
+    <p class="foot">Ghana Health Service · Regional Health Directorate</p>
+  </div>
+</body>
+</html>
