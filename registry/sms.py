@@ -28,6 +28,7 @@ MAX_SMS_CHARS = 306                 # two GSM-7 segments
 DELIVERY_POLL_MINUTES = 10
 DELIVERY_POLL_DAYS = 2
 PENDING_DELIVERY = ['queued', 'pending', 'submitted', 'scheduled', 'retry']
+USER_AGENT = 'RHD-eRegistry/1.0'
 
 
 # ---------------- formatting ----------------
@@ -105,7 +106,8 @@ def config_problems(cfg):
 # ---------------- HTTP ----------------
 def http_fetch(method, url, headers=None, body=None, timeout=20):
     """Returns (status, headers, text). Raises OSError if the server cannot be reached."""
-    req = urllib.request.Request(url, data=body, method=method, headers=headers or {})
+    # Cloudflare (in front of LetsFish) rejects urllib's default "Python-urllib/x.y" agent with 403 / error 1010.
+    req = urllib.request.Request(url, data=body, method=method, headers={'User-Agent': USER_AGENT, **(headers or {})})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return r.status, dict(r.headers), r.read().decode('utf-8', 'replace')
@@ -149,7 +151,11 @@ class LetsFishProvider:
                 return {'ok': False, 'error': 'LetsFish rejected the recipient', 'permanent': True, 'ref': item.get('reference')}
             return {'ok': True, 'ref': (item or {}).get('reference'), 'status': (item or {}).get('status') or 'queued'}
         err = (body or {}).get('error') or {}
-        detail = ': '.join(x for x in (err.get('title'), err.get('detail')) if x) or f'HTTP {status}'
+        if not isinstance(err, dict):
+            err = {'detail': str(err)}
+        snippet = re.sub(r'\s+', ' ', re.sub(r'<[^>]+>', ' ', text or '')).strip()[:150]
+        detail = (': '.join(x for x in (err.get('title'), err.get('detail')) if x)
+                  or (body or {}).get('message') or snippet or f'HTTP {status}')
         out = {'ok': False, 'http_status': status, 'error': f'LetsFish {status}: {detail}'}
         if status == 429:
             try:

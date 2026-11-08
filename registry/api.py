@@ -4,6 +4,7 @@ import csv
 import hashlib
 import io
 import json
+import logging
 import re
 import secrets
 import time
@@ -28,6 +29,7 @@ from .sms import config_problems, normalize_phone, sms_config, worker as sms_wor
 from .store import get_settings, iso, public_settings, set_setting, utcnow
 
 HttpError, fail = wf.HttpError, wf.fail
+log = logging.getLogger('registry')
 MAX_FILE = 10 * 1024 * 1024
 ALLOWED_MIME = {
     'application/pdf': '.pdf', 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp',
@@ -80,6 +82,10 @@ def api(methods=('GET',), public=False, admin=False):
                 return fn(request, user, body, *args, **kwargs)
             except HttpError as e:
                 return JsonResponse({'error': e.message}, status=e.status)
+            except Exception as e:   # noqa: BLE001 - answer in JSON so the browser can show the cause
+                log.exception('API error on %s %s', request.method, request.path)
+                return JsonResponse({'error': f'Server error ({type(e).__name__}: {str(e)[:200]}). Details are in stderr.log.'},
+                                    status=500)
         return view
     return deco
 
@@ -382,8 +388,13 @@ def letter_attach(request, user, body, letter_id):
         fail(413, 'Files must be 10 MB or smaller')
     filename = re.sub(r'[^\w.\- ()]', '_', Path(str(body.get('filename') or f'attachment{ext}')).name)[:150]
     stored = secrets.token_hex(16) + ext
-    cfg.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-    (cfg.UPLOAD_DIR / stored).write_bytes(data)
+    try:
+        cfg.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+        (cfg.UPLOAD_DIR / stored).write_bytes(data)
+    except OSError as e:
+        log.exception('Could not save upload to %s', cfg.UPLOAD_DIR)
+        fail(500, f'The file could not be saved on the server ({e.strerror or e}). '
+                  f'Check that the uploads folder exists and is writable: {cfg.UPLOAD_DIR}')
     with transaction.atomic():
         Attachment.objects.create(letter=l, filename=filename, stored_name=stored, mime=mime, size=len(data),
                                   sha256=hashlib.sha256(data).hexdigest(), uploaded_by=user)

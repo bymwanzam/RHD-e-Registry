@@ -561,10 +561,15 @@ async function viewNew(view, parts, query, stale) {
       if (incoming) body.incoming = true;
       if (parent) body.parent_id = parent.id;
       const { id } = await api('POST', '/api/letters', body);
+      // The letter is saved now: an attachment failure must not leave the form open (a second submit would duplicate it).
+      let uploadErr = null;
       const files = $('#files').files;
-      if (files.length) await uploadFiles(id, files);
-      await refreshMe();
-      toast(incoming ? 'Incoming letter recorded' : 'Letter created');
+      if (files.length) {
+        try { await uploadFiles(id, files); } catch (err) { uploadErr = err; }
+      }
+      try { await refreshMe(); } catch { /* not essential */ }
+      if (uploadErr) toast(`${incoming ? 'Incoming letter recorded' : 'Letter created'}, but the attachment failed: ${uploadErr.message}. Attach it again from the letter page.`, true);
+      else toast(incoming ? 'Incoming letter recorded' : 'Letter created');
       go(`#/letter/${id}`);
     } catch (err) {
       $('#formErr').innerHTML = html`<div class="notice error">${err.message}</div>`.s;
